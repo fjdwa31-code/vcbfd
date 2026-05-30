@@ -78,6 +78,17 @@ class HealthHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # suppress access logs
 
+def self_ping(port):
+    """Pings own health endpoint every 30 seconds to prevent Render free tier spin-down."""
+    time.sleep(15)  # wait for server to start before first ping
+    url = f"http://localhost:{port}"
+    while True:
+        try:
+            requests.get(url, timeout=5)
+        except Exception:
+            pass  # silently ignore — server may be briefly busy
+        time.sleep(30)
+
 if __name__ == "__main__":
     # Start IMAP watchers in background threads
     for inbox in INBOXES:
@@ -87,6 +98,12 @@ if __name__ == "__main__":
 
     # Start HTTP server on the port Render expects
     port = int(os.environ.get("PORT", 8080))
+
+    # Self-ping thread — keeps Render free tier awake by hitting own health endpoint every 30s
+    ping_thread = threading.Thread(target=self_ping, args=(port,), daemon=True)
+    ping_thread.start()
+    logging.info("Self-ping thread started — service will stay alive")
+
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
     logging.info(f"Health server listening on port {port}")
     server.serve_forever()
