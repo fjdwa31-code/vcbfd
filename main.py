@@ -3,8 +3,10 @@ import email
 import requests
 import logging
 import time
+import os
 from datetime import datetime, timezone
 from imapclient import IMAPClient
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -67,11 +69,24 @@ def watch_inbox(config):
             logging.error(f"Error on {config['email']}: {e}. Reconnecting in 10s...")
             time.sleep(10)
 
+# Minimal HTTP server so Render thinks this is a web service
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"IMAP watcher running")
+    def log_message(self, format, *args):
+        pass  # suppress access logs
+
 if __name__ == "__main__":
-    threads = []
+    # Start IMAP watchers in background threads
     for inbox in INBOXES:
         t = threading.Thread(target=watch_inbox, args=(inbox,), daemon=True)
         t.start()
-        threads.append(t)
-    for t in threads:
-        t.join()
+        logging.info(f"Started watcher for {inbox['email']}")
+
+    # Start HTTP server on the port Render expects
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    logging.info(f"Health server listening on port {port}")
+    server.serve_forever()
