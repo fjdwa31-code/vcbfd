@@ -11,7 +11,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 # ── FILL THESE IN ──────────────────────────────────────────
-N8N_WEBHOOK_URL = "https://hftfd.app.n8n.cloud/webhook/dc0d0625-d17f-4876-aa4b-6662a5ef16bd"
+N8N_WEBHOOK_URL = "https://rrsags.app.n8n.cloud/webhook/dc0d0625-d17f-4876-aa4b-6662a5ef16bd"
 
 IMAP_HOST = "mail.privateemail.com"
 IMAP_PORT = 993
